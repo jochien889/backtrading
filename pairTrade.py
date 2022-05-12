@@ -103,7 +103,8 @@ class pairTrade():
         actionObject = pairTradeAction(self.init, self.actionType)
         
         pastStatus = 0
-        date, statusList = [], []
+        date, statusList =  [], []
+        
         if self.strategyType == "convergence":
             self.df['ASymbolSide'] = [-1 if i >= self.exit else 1 if i < -self.exit else 0 for i in self.df['zscore'].tolist()]
             self.df['BSymbolSide'] = self.df['hedgeRatio'] * self.df['ASymbolSide'] * -1 if 'hedgeRatio' in self.df.columns else self.df['ASymbolSide'] * -1
@@ -116,14 +117,18 @@ class pairTrade():
         for index, row in self.df.iterrows():
             currStatus = 0 if (pastStatus == 1 and row['zscore'] < -self.exit) or (pastStatus == -1 and row['zscore'] > self.exit) else 1 if (pastStatus == 1 and row['zscore'] > self.exit or row['zscore'] > self.entry) and row['zscore'] < self.stopLoss else 2 if row['zscore'] > self.stopLoss else -1 if (pastStatus == -1 and row['zscore'] < -self.exit or row['zscore'] < -self.entry) and row['zscore'] > -self.stopLoss else -2 if row['zscore'] < -self.stopLoss else 0
             conStatus = (pastStatus, currStatus)
+            pastStatus = currStatus
             actionObject.runAction(conStatus, row[self.A_Symbol],  row[self.B_Symbol], row['ASymbolSide'], row['BSymbolSide'])
-            # if pastStatus != currStatus:
-                # strategy[conStatus](row[A_symbol], row[B_symbol], 1, row['ratio'] )
-            # else:
-            #     pass
             date.append(index)
             statusList.append(currStatus)
+            
         self.df['status'] = statusList
-        
+        self.df['A_position'] = actionObject.A_positionList
+        self.df['B_position'] = actionObject.B_positionList
+        self.df['A_asset'] = actionObject.A_assetList
+        self.df['B_asset'] = actionObject.B_assetList
+        self.df['totalAsset'] = actionObject.totalAssetList
+        self.df['available'] = actionObject.availableList
+        self.df['PNL'] = self.df['totalAsset'] + self.df['available'] - self.init
         # $部位狀態完成
-        # TODO 進出場操作、報表整理 
+        # TODO chart、KPI報表整理 
