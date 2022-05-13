@@ -130,5 +130,62 @@ class pairTrade():
         self.df['totalAsset'] = actionObject.totalAssetList
         self.df['available'] = actionObject.availableList
         self.df['PNL'] = self.df['totalAsset'] + self.df['available'] - self.init
-        # $部位狀態完成
-        # TODO chart、KPI報表整理 
+
+        self.KPI = pd.DataFrame()
+        pastAsset = 0
+        entryDate, AEntryPrice, AEntryPosition, AEntryAsset, BEntryPrice, BEntryPosition, BEntryAsset, totalEntryAsset= [], [], [], [], [], [], [], []
+        exitDate,  AExitPrice, AExitPosition, AExitAsset, BExitPrice, BExitPosition, BExitAsset, totalExitAsset= [], [], [], [], [], [], [], []
+        for index, row in self.df.iterrows():
+            if row['A_position'] != pastAsset and pastAsset == 0:
+                entryDate.append(index)
+                AEntryPrice.append(row[self.A_Symbol]), AEntryPosition.append(row['A_position']), AEntryAsset.append(row['A_asset'])
+                BEntryPrice.append(row[self.B_Symbol]), BEntryPosition.append(row['B_position']), BEntryAsset.append(row['B_asset'])
+                totalEntryAsset.append(row['A_asset'] + row['B_asset'])
+            elif row['A_position'] != pastAsset and pastAsset != 0:
+                exitDate.append(index)
+                AExitPrice.append(row[self.A_Symbol]), AExitPosition.append(AEntryPosition[-1])
+                AAsset  = abs(AEntryPosition[-1]) * (row[self.A_Symbol] - AEntryPrice[-1] + AEntryPrice[-1]) if AEntryPosition[-1] > 0 else abs(AEntryPosition[-1]) * (AEntryPrice[-1] - row[self.A_Symbol] + AEntryPrice[-1])
+                AExitAsset.append(AAsset)
+                BExitPrice.append(row[self.B_Symbol]), BExitPosition.append(row['B_position']) 
+                BAsset  = abs(BEntryPosition[-1]) * (row[self.B_Symbol] - BEntryPrice[-1] + BEntryPrice[-1]) if BEntryPosition[-1] > 0 else abs(BEntryPosition[-1]) * (BEntryPrice[-1] - row[self.B_Symbol] + BEntryPrice[-1])
+                BExitAsset.append(BAsset)
+                totalExitAsset.append(row['available'])
+            pastAsset = row['A_position']
+        
+        if len(entryDate) > len(exitDate):
+            exitDate.append(self.df.index[-1])
+            AExitPrice.append(self.df.index.loc[:, self.A_Symbol][-1])
+            AExitPosition.append(AEntryPosition[-1])
+            Aex = AEntryPosition[-1] * (self.df.loc[:, self.A_Symbol][-1] - AEntryPrice[-1] + AEntryPrice[-1]) if AEntryPosition[-1] > 0 else AEntryPosition[-1] * (AEntryPrice[-1] - self.df.loc[:, self.A_Symbol][-1] + AEntryPrice[-1]) 
+            AExitAsset.append(Aex)
+            BExitPrice.append(self.df.index.loc[:, self.B_Symbol][-1])
+            BExitPosition.append(BEntryPosition[-1])
+            Bex = BEntryPosition[-1] * (self.df.loc[:, self.B_Symbol][-1] - BEntryPrice[-1] + BEntryPrice[-1]) if BEntryPosition[-1] > 0 else BEntryPosition[-1] * (BEntryPrice[-1] - self.df.loc[:, self.B_Symbol][-1] + BEntryPrice[-1]) 
+            BExitAsset.append(Bex)
+            totalExitAsset.append(Aex + Bex)
+            print("回測完成，場上有單{}_{}已平倉".format(self.A_Symbol, self.B_Symbol))
+        elif len(entryDate) - len(exitDate) > 1 or len(entryDate) != len(exitDate):
+            raise Exception('check entry and exit point')
+        else:
+            print("{}_{} 回測完成".format(self.A_Symbol, self.B_Symbol))
+            
+        self.KPI['entryDate'] = entryDate
+        self.KPI['AEntryPrice'] = AEntryPrice
+        self.KPI['AEntryPosition'] = AEntryPosition
+        self.KPI['AEntryAsset'] = AEntryAsset
+        self.KPI['BEntryPrice'] = BEntryPrice
+        self.KPI['BEntryPosition'] = BEntryPosition
+        self.KPI['BEntryAsset'] = BEntryAsset
+        self.KPI['totalEntryAsset'] = totalEntryAsset
+        self.KPI['exitDate'] = exitDate
+        self.KPI['AExitPrice'] = AExitPrice
+        self.KPI['AExitPosition'] = AExitPosition
+        self.KPI['AExitAsset'] = AExitAsset
+        self.KPI['BExitPrice'] = BExitPrice
+        self.KPI['BExitPosition'] = BExitPosition
+        self.KPI['BExitAsset'] = BExitAsset
+        self.KPI['totalExitAsset'] = totalExitAsset
+        
+        
+        # $部狀態完成位，KPI報表完成
+        # TODO chart
