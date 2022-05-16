@@ -25,6 +25,14 @@ class pairTradeAction():
         self.A_EntryPrice = 0
         self.B_EntryPrice = 0
         self.init = init
+
+        self.AlongEntry = []
+        self.AshortEntry = []
+        self.AlongExit = []
+        self.AshortExit = []
+        # self.Alongstoploss = []
+        # self.Ashortstoploss = []     
+
         self.actionType = actionType
         self.strategy = {(0,1): self._forwardEntry, 
                         (0,2): self._exitForwardStoploss,
@@ -53,6 +61,12 @@ class pairTradeAction():
         """
         ### self.B_positionList[-1] if len(self.B_positionList)>0 else 0
         if strategyKey not in self.strategy:
+            self.AlongEntry.append(0)
+            self.AshortEntry.append(0)
+            self.AlongExit.append(0)
+            self.AshortExit.append(0)
+            # self.Alongstoploss.append(0)
+            # self.Ashortstoploss.append(0)
             self.A_PriceList.append(A_Price)
             self.B_PriceList.append(B_Price)
             self.A_positionList.append(self.A_positionList[-1] if len(self.A_positionList)>0 else 0)
@@ -73,6 +87,10 @@ class pairTradeAction():
         long B 
         short A  
         """
+        self.AlongEntry.append(1)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         if self.actionType == 'amount':
@@ -85,13 +103,13 @@ class pairTradeAction():
             self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         elif self.actionType == 'unit':
-            A_position = self.availableList[-1]/(1+abs(B_side)) * A_Side if len(self.availableList) else self.init/(1+abs(B_side)) * A_Side
-            B_position = A_position * B_side
-            self.A_assetList.append(A_position * A_Price)
-            self.B_assetList.append(B_position * B_Price) 
-            self.A_positionList.append(A_position * A_Side)
-            self.B_positionList.append(B_position * B_side)
-            self.totalAssetList.append(self.A_assetList[-1] + self.B_assetList[-1])
+            A_asset = self.availableList[-1]/(1+abs(B_side)) if len(self.availableList) else self.init/(1+abs(B_side))
+            B_asset = A_asset * abs(B_side)
+            self.A_assetList.append(A_asset)
+            self.B_assetList.append(B_asset) 
+            self.A_positionList.append(A_asset * A_Side/A_Price)
+            self.B_positionList.append(A_asset * B_side/B_Price)
+            self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         self.A_EntryPrice = A_Price
         self.B_EntryPrice = B_Price
@@ -103,6 +121,10 @@ class pairTradeAction():
         short B    
         """
         ### 出場
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(1)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         if self.actionType == 'amount':
@@ -115,13 +137,13 @@ class pairTradeAction():
             self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         elif self.actionType == 'unit':
-            A_position = self.availableList[-1]/(1+abs(B_side)) * A_Side if len(self.availableList) else self.init/(1+abs(B_side)) * A_Side
-            B_position = A_position * B_side
-            self.A_assetList.append(A_position * A_Price)
-            self.B_assetList.append(B_position * B_Price) 
-            self.A_positionList.append(A_position * A_Side)
-            self.B_positionList.append(B_position * B_side)
-            self.totalAssetList.append(self.A_assetList[-1] + self.B_assetList[-1])
+            A_asset = self.availableList[-1]/(1+abs(B_side)) if len(self.availableList) else self.init/(1+abs(B_side))
+            B_asset = A_asset * abs(B_side)
+            self.A_assetList.append(A_asset)
+            self.B_assetList.append(B_asset) 
+            self.A_positionList.append(A_asset * A_Side/A_Price)
+            self.B_positionList.append(A_asset * B_side/B_Price)
+            self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         self.A_EntryPrice = A_Price
         self.B_EntryPrice = B_Price
@@ -132,6 +154,10 @@ class pairTradeAction():
         long A 
         short B    
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(1)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         if self.actionType == 'amount':
@@ -144,13 +170,13 @@ class pairTradeAction():
             self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         elif self.actionType == 'unit':
-            A_position = self.availableList[-1]/(1+abs(B_side)) * A_Side if len(self.availableList) else self.init/(1+abs(B_side)) * A_Side
-            B_position = A_position * B_side
-            self.A_assetList.append(A_position * A_Price)
-            self.B_assetList.append(B_position * B_Price) 
-            self.A_positionList.append(A_position * A_Side)
-            self.B_positionList.append(B_position * B_side)
-            self.totalAssetList.append(self.A_assetList[-1] + self.B_assetList[-1])
+            A_asset = self.availableList[-1]/(1+abs(B_side)) if len(self.availableList) else self.init/(1+abs(B_side))
+            B_asset = A_asset * abs(B_side)
+            self.A_assetList.append(A_asset)
+            self.B_assetList.append(B_asset) 
+            self.A_positionList.append(A_asset * A_Side/A_Price)
+            self.B_positionList.append(A_asset * B_side/B_Price)
+            self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         self.A_EntryPrice = A_Price
         self.B_EntryPrice = B_Price
@@ -161,6 +187,10 @@ class pairTradeAction():
         long B 
         short A    
         """
+        self.AlongEntry.append(1)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         if self.actionType == 'amount':
@@ -173,13 +203,13 @@ class pairTradeAction():
             self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         elif self.actionType == 'unit':
-            A_position = self.availableList[-1]/(1+abs(B_side)) * A_Side if len(self.availableList) else self.init/(1+abs(B_side)) * A_Side
-            B_position = A_position * B_side
-            self.A_assetList.append(A_position * A_Price)
-            self.B_assetList.append(B_position * B_Price) 
-            self.A_positionList.append(A_position * A_Side)
-            self.B_positionList.append(B_position * B_side)
-            self.totalAssetList.append(self.A_assetList[-1] + self.B_assetList[-1])
+            A_asset = self.availableList[-1]/(1+abs(B_side)) if len(self.availableList) else self.init/(1+abs(B_side))
+            B_asset = A_asset * abs(B_side)
+            self.A_assetList.append(A_asset)
+            self.B_assetList.append(B_asset) 
+            self.A_positionList.append(A_asset * A_Side/A_Price)
+            self.B_positionList.append(A_asset * B_side/B_Price)
+            self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         self.A_EntryPrice = A_Price
         self.B_EntryPrice = B_Price
@@ -191,6 +221,10 @@ class pairTradeAction():
         short B
         close the position
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(1)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         ## 可用資金
@@ -211,6 +245,10 @@ class pairTradeAction():
         short B
         close the position
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(1)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         ## 可用資金
@@ -231,6 +269,10 @@ class pairTradeAction():
         short A
         close the position  
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(1)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         ## 可用資金
@@ -251,6 +293,10 @@ class pairTradeAction():
         short A
         close the position  
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(1)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         ## 可用資金
@@ -268,6 +314,10 @@ class pairTradeAction():
         """
         statusList = (0,1)
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(1)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         if self.actionType == 'amount':
@@ -280,13 +330,13 @@ class pairTradeAction():
             self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         elif self.actionType == 'unit':
-            A_position = self.availableList[-1]/(1+abs(B_side)) * A_Side if len(self.availableList) else self.init/(1+abs(B_side)) * A_Side
-            B_position = A_position * B_side
-            self.A_assetList.append(A_position * A_Price)
-            self.B_assetList.append(B_position * B_Price) 
-            self.A_positionList.append(A_position * A_Side)
-            self.B_positionList.append(B_position * B_side)
-            self.totalAssetList.append(self.A_assetList[-1] + self.B_assetList[-1])
+            A_asset = self.availableList[-1]/(1+abs(B_side)) if len(self.availableList) else self.init/(1+abs(B_side))
+            B_asset = A_asset * abs(B_side)
+            self.A_assetList.append(A_asset)
+            self.B_assetList.append(B_asset) 
+            self.A_positionList.append(A_asset * A_Side/A_Price)
+            self.B_positionList.append(A_asset * B_side/B_Price)
+            self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         self.A_EntryPrice = A_Price
         self.B_EntryPrice = B_Price
@@ -297,6 +347,10 @@ class pairTradeAction():
         A:long
         B:short
         """
+        self.AlongEntry.append(1)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         if self.actionType == 'amount':
@@ -309,13 +363,13 @@ class pairTradeAction():
             self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         elif self.actionType == 'unit':
-            A_position = self.availableList[-1]/(1+abs(B_side)) * A_Side if len(self.availableList) else self.init/(1+abs(B_side)) * A_Side
-            B_position = A_position * B_side
-            self.A_assetList.append(A_position * A_Price)
-            self.B_assetList.append(B_position * B_Price) 
-            self.A_positionList.append(A_position * A_Side)
-            self.B_positionList.append(B_position * B_side)
-            self.totalAssetList.append(self.A_assetList[-1] + self.B_assetList[-1])
+            A_asset = self.availableList[-1]/(1+abs(B_side))  if len(self.availableList) else self.init/(1+abs(B_side)) 
+            B_asset = A_asset * abs(B_side)
+            self.A_assetList.append(A_asset)
+            self.B_assetList.append(B_asset) 
+            self.A_positionList.append(A_asset * A_Side/A_Price)
+            self.B_positionList.append(A_asset * B_side/B_Price)
+            self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         self.A_EntryPrice = A_Price
         self.B_EntryPrice = B_Price
@@ -327,7 +381,10 @@ class pairTradeAction():
         short B
         close the position
         """
-
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(1)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         ## 可用資金
@@ -351,6 +408,10 @@ class pairTradeAction():
         long B 
         short A
         """
+        self.AlongEntry.append(1)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         ### 出場
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
@@ -370,13 +431,13 @@ class pairTradeAction():
             self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         elif self.actionType == 'unit':
-            A_position = self.availableList[-1]/(1+abs(B_side)) * A_Side
-            B_position = A_position * B_side
-            self.A_assetList.append(A_position * A_Price)
-            self.B_assetList.append(B_position * B_Price) 
-            self.A_positionList.append(A_position * A_Side)
-            self.B_positionList.append(B_position * B_side)
-            self.totalAssetList.append(self.A_assetList[-1] + self.B_assetList[-1])
+            A_asset = self.availableList[-1]/(1+abs(B_side)) 
+            B_asset = A_asset * abs(B_side)
+            self.A_assetList.append(A_asset)
+            self.B_assetList.append(B_asset) 
+            self.A_positionList.append(A_asset * A_Side/A_Price)
+            self.B_positionList.append(A_asset * B_side/B_Price)
+            self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         self.A_EntryPrice = A_Price
         self.B_EntryPrice = B_Price
@@ -388,6 +449,10 @@ class pairTradeAction():
         short A
         close the position
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(1)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         ## 可用資金
@@ -410,6 +475,10 @@ class pairTradeAction():
         long A
         short B
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(1)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         ### 出場
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
@@ -429,13 +498,13 @@ class pairTradeAction():
             self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         elif self.actionType == 'unit':
-            A_position = self.availableList[-1]/(1+abs(B_side)) * A_Side
-            B_position = A_position * B_side
-            self.A_assetList.append(A_position * A_Price)
-            self.B_assetList.append(B_position * B_Price) 
-            self.A_positionList.append(A_position * A_Side)
-            self.B_positionList.append(B_position * B_side)
-            self.totalAssetList.append(self.A_assetList[-1] + self.B_assetList[-1])
+            A_asset = self.availableList[-1]/(1+abs(B_side)) 
+            B_asset = A_asset * abs(B_side)
+            self.A_assetList.append(A_asset)
+            self.B_assetList.append(B_asset) 
+            self.A_positionList.append(A_asset * A_Side/A_Price)
+            self.B_positionList.append(A_asset * B_side/B_Price)
+            self.totalAssetList.append(A_asset + B_asset)
             self.availableList.append(0)
         self.A_EntryPrice = A_Price
         self.B_EntryPrice = B_Price
@@ -445,6 +514,10 @@ class pairTradeAction():
         出場點 -> 正指損點 --不動作
         statusList = (0,2)
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         self.A_positionList.append(self.A_positionList[-1] if len(self.A_positionList)>0 else 0)
@@ -462,6 +535,10 @@ class pairTradeAction():
         出場點 -> 負指損點 --不動作
         statusList = (0,-2)
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         self.A_positionList.append(self.A_positionList[-1] if len(self.A_positionList)>0 else 0)
@@ -479,6 +556,10 @@ class pairTradeAction():
         正指損點 -> 出場點 --不動作
         statusList = (2, 0)
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         self.A_positionList.append(self.A_positionList[-1] if len(self.A_positionList)>0 else 0)
@@ -496,6 +577,10 @@ class pairTradeAction():
         負指損點 -> 出場點 --不動作
         statusList = (-2, 0)
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         self.A_positionList.append(self.A_positionList[-1] if len(self.A_positionList)>0 else 0)
@@ -513,6 +598,10 @@ class pairTradeAction():
         負指損點 -> 正指損點 --不動作
         statusList = (-2, 2)
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         self.A_positionList.append(self.A_positionList[-1] if len(self.A_positionList)>0 else 0)
@@ -530,6 +619,10 @@ class pairTradeAction():
         正指損點 -> 負指損點 --不動作
         statusList = (2, -2)
         """
+        self.AlongEntry.append(0)
+        self.AshortEntry.append(0)
+        self.AlongExit.append(0)
+        self.AshortExit.append(0)
         self.A_PriceList.append(A_Price)
         self.B_PriceList.append(B_Price)
         self.A_positionList.append(self.A_positionList[-1] if len(self.A_positionList)>0 else 0)

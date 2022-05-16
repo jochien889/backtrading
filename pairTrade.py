@@ -4,6 +4,8 @@ import statsmodels.formula.api as sm
 from numpy_ext import rolling_apply
 import warnings
 from action import pairTradeAction
+from matplotlib import pyplot as plt
+pd.set_option('display.float_format', lambda x: '%.8f' % x)
 warnings.filterwarnings('ignore')
 
 class pairTrade():
@@ -26,6 +28,7 @@ class pairTrade():
             'returnSpread': self._indicatorReturnSpread,
             'regression': self._indicatorRegression
         }
+        self.KPI = pd.DataFrame()
     
     def indicator(self, tradeType, rolling = 20):
         """
@@ -50,6 +53,7 @@ class pairTrade():
         """
         self.df['spread'] = self.df.loc[:,self.A_Symbol] - self.df.loc[:,self.B_Symbol]
         self.df['zscore'] = rolling_apply(self._zScore, self.rolling, self.df['spread'])
+        self.df['zscore'] = self.df['zscore'].shift(1)
         # self.df['ASymbolSide'] = [-1 if i >= self.exit else 1 if i < -self.exit else 0 for i in self.df['zscore'].tolist()]
         
     def _indicatorRatio(self):
@@ -58,6 +62,7 @@ class pairTrade():
         """
         self.df['Ratio'] = self.df.loc[:,self.A_Symbol]/self.df.loc[:,self.B_Symbol]
         self.df['zscore'] = rolling_apply(self._zScore, self.rolling,self.df.loc[:,'Ratio'])
+        self.df['zscore'] = self.df['zscore'].shift(1)
         # self.df['ASymbolSide'] = [-1 if i >= self.exit else 1 if i < -self.exit else 0 for i in self.df['zscore'].tolist()]
 
     def _indicatorReturnSpread(self):
@@ -68,6 +73,7 @@ class pairTrade():
         self.df['B_return'] = self.df.loc[:,self.B_Symbol].pct_change()
         self.df['returnSpread'] = self.df.loc[:,'A_return'] - self.df.loc[:,'B_return']
         self.df['zscore'] = rolling_apply(self._zScore, self.rolling, self.df.loc[:,'returnSpread'])
+        self.df['zscore'] = self.df['zscore'].shift(1)
         # self.df['ASymbolSide'] = [-1 if i >= self.exit else 1 if i < -self.exit else 0 for i in self.df['zscore'].tolist()]
 
     def _indicatorRegression(self):
@@ -81,6 +87,7 @@ class pairTrade():
         self.df['hedgeRatio'] = hedgeRatio 
         self.df['y_hat'] = self.df.loc[:,self.A_Symbol] - self.df.loc[:,'hedgeRatio'] * self.df.loc[:,self.B_Symbol]
         self.df['zscore'] = rolling_apply(self._zScore, self.rolling, self.df.loc[:,'y_hat'])
+        self.df['zscore'] = self.df['zscore'].shift(1)
         # self.df['ASymbolSide'] = [-1 if i >= self.exit else 1 if i < -self.exit else 0 for i in self.df['zscore'].tolist()]
         
     def strategy(self, strategyType, actionType, entry, exit, stopLoss, init = 100000):
@@ -129,9 +136,14 @@ class pairTrade():
         self.df['B_asset'] = actionObject.B_assetList
         self.df['totalAsset'] = actionObject.totalAssetList
         self.df['available'] = actionObject.availableList
+        self.df['total'] = self.df['totalAsset'] + self.df['available']
         self.df['PNL'] = self.df['totalAsset'] + self.df['available'] - self.init
+        self.df['AlongEntry'] = actionObject.AlongEntry
+        self.df['AshortEntry'] = actionObject.AshortEntry
+        self.df['AlongExit'] = actionObject.AlongExit
+        self.df['AshortExit'] = actionObject.AshortExit
 
-        self.KPI = pd.DataFrame()
+        # self.KPI = pd.DataFrame()
         pastAsset = 0
         entryDate, AEntryPrice, AEntryPosition, AEntryAsset, BEntryPrice, BEntryPosition, BEntryAsset, totalEntryAsset= [], [], [], [], [], [], [], []
         exitDate,  AExitPrice, AExitPosition, AExitAsset, BExitPrice, BExitPosition, BExitAsset, totalExitAsset= [], [], [], [], [], [], [], []
@@ -146,7 +158,7 @@ class pairTrade():
                 AExitPrice.append(row[self.A_Symbol]), AExitPosition.append(AEntryPosition[-1])
                 AAsset  = abs(AEntryPosition[-1]) * (row[self.A_Symbol] - AEntryPrice[-1] + AEntryPrice[-1]) if AEntryPosition[-1] > 0 else abs(AEntryPosition[-1]) * (AEntryPrice[-1] - row[self.A_Symbol] + AEntryPrice[-1])
                 AExitAsset.append(AAsset)
-                BExitPrice.append(row[self.B_Symbol]), BExitPosition.append(row['B_position']) 
+                BExitPrice.append(row[self.B_Symbol]), BExitPosition.append(BEntryPosition[-1]) 
                 BAsset  = abs(BEntryPosition[-1]) * (row[self.B_Symbol] - BEntryPrice[-1] + BEntryPrice[-1]) if BEntryPosition[-1] > 0 else abs(BEntryPosition[-1]) * (BEntryPrice[-1] - row[self.B_Symbol] + BEntryPrice[-1])
                 BExitAsset.append(BAsset)
                 totalExitAsset.append(row['available'])
@@ -154,20 +166,20 @@ class pairTrade():
         
         if len(entryDate) > len(exitDate):
             exitDate.append(self.df.index[-1])
-            AExitPrice.append(self.df.index.loc[:, self.A_Symbol][-1])
+            AExitPrice.append(self.df.loc[:, self.A_Symbol][-1])
             AExitPosition.append(AEntryPosition[-1])
-            Aex = AEntryPosition[-1] * (self.df.loc[:, self.A_Symbol][-1] - AEntryPrice[-1] + AEntryPrice[-1]) if AEntryPosition[-1] > 0 else AEntryPosition[-1] * (AEntryPrice[-1] - self.df.loc[:, self.A_Symbol][-1] + AEntryPrice[-1]) 
+            Aex = AEntryPosition[-1] * (self.df.loc[:, self.A_Symbol][-1] - AEntryPrice[-1] + AEntryPrice[-1]) if AEntryPosition[-1] > 0 else abs(AEntryPosition[-1]) * (AEntryPrice[-1] - self.df.loc[:, self.A_Symbol][-1] + AEntryPrice[-1]) 
             AExitAsset.append(Aex)
-            BExitPrice.append(self.df.index.loc[:, self.B_Symbol][-1])
+            BExitPrice.append(self.df.loc[:, self.B_Symbol][-1])
             BExitPosition.append(BEntryPosition[-1])
-            Bex = BEntryPosition[-1] * (self.df.loc[:, self.B_Symbol][-1] - BEntryPrice[-1] + BEntryPrice[-1]) if BEntryPosition[-1] > 0 else BEntryPosition[-1] * (BEntryPrice[-1] - self.df.loc[:, self.B_Symbol][-1] + BEntryPrice[-1]) 
+            Bex = BEntryPosition[-1] * (self.df.loc[:, self.B_Symbol][-1] - BEntryPrice[-1] + BEntryPrice[-1]) if BEntryPosition[-1] > 0 else abs(BEntryPosition[-1]) * (BEntryPrice[-1] - self.df.loc[:, self.B_Symbol][-1] + BEntryPrice[-1]) 
             BExitAsset.append(Bex)
             totalExitAsset.append(Aex + Bex)
-            print("回測完成，場上有單{}_{}已平倉".format(self.A_Symbol, self.B_Symbol))
+            print("{}_{} 回測結果，場上有單已平倉".format(self.A_Symbol, self.B_Symbol))
         elif len(entryDate) - len(exitDate) > 1 or len(entryDate) != len(exitDate):
             raise Exception('check entry and exit point')
         else:
-            print("{}_{} 回測完成".format(self.A_Symbol, self.B_Symbol))
+            print("{}_{} 回測結果".format(self.A_Symbol, self.B_Symbol))
             
         self.KPI['entryDate'] = entryDate
         self.KPI['AEntryPrice'] = AEntryPrice
@@ -185,7 +197,150 @@ class pairTrade():
         self.KPI['BExitPosition'] = BExitPosition
         self.KPI['BExitAsset'] = BExitAsset
         self.KPI['totalExitAsset'] = totalExitAsset
-        
-        
-        # $部狀態完成位，KPI報表完成
-        # TODO chart
+        self.KPI['PNL'] = self.KPI['totalExitAsset'] - self.KPI['totalEntryAsset']
+
+        win = [i for i in self.KPI['PNL'].tolist() if i > 0]
+        loss = [i for i in self.KPI['PNL'].tolist() if i < 0]
+        Profit_Factor = sum(win)/abs(sum(loss))
+        Win_Loss_Rate = (sum(win)/len(win))/(-sum(loss)/len(loss))
+
+        MDD,Capital,MaxCapital = 0,0,0
+        for p in self.KPI['PNL'].tolist():
+            Capital += p
+            MaxCapital = max(MaxCapital,Capital)
+            DD = MaxCapital - Capital
+            MDD = max(MDD,DD)
+
+        print('-----------------------------{}-{}--------------------------'.format(self.A_Symbol, self.B_Symbol))
+        print('初始價格', self.init)
+        print('總損益: ', "{0:.8f}".format(sum(self.KPI['PNL'])))
+        print('總交易次數: ', self.KPI.shape[0])
+        print('平均損益: ', sum(self.KPI['PNL'])/self.KPI.shape[0])
+        print('勝率: ', len(win)/self.KPI.shape[0])
+        print('獲利因子: ', Profit_Factor)
+        print('賺賠比: ', Win_Loss_Rate)
+        print('最大資金回落: ', MDD)
+        print('夏普比率: ', np.mean(self.KPI['PNL'])/np.std(self.KPI['PNL']))
+
+    def pplot(self):
+        date = self.df.index
+
+        Asym = self.df[self.A_Symbol]
+        Bsym = self.df[self.B_Symbol]
+        total = self.df['total']
+        zscore = self.df['zscore']
+
+        fig, axs = plt.subplots(4, 1, sharex=True, figsize = (15, 10))
+        fig.subplots_adjust(hspace=0)
+
+        axs[0].plot(date, Asym, color = 'b')
+        axs[0].set_ylabel("{}".format(self.A_Symbol))
+        axs[0].scatter(
+            self.df[self.df['AlongEntry'] == 1].index,
+            self.df[self.df['AlongEntry'] == 1][self.A_Symbol],
+            c = "g",
+            s = 10
+            )
+        axs[0].scatter(
+            self.df[self.df['AshortEntry'] == 1].index,
+            self.df[self.df['AshortEntry'] == 1][self.A_Symbol],
+            c = "g",
+            s = 10
+            )
+        axs[0].scatter(
+            self.df[self.df['AlongExit'] == 1].index,
+            self.df[self.df['AlongExit'] == 1][self.A_Symbol],
+            c = "r",
+            s = 10
+            )
+        axs[0].scatter(
+            self.df[self.df['AshortExit'] == 1].index,
+            self.df[self.df['AshortExit'] == 1][self.A_Symbol],
+            c = "r",
+            s = 10
+            )
+        axs[1].plot(date, Bsym, color = 'b')
+        axs[1].set_ylabel("{}".format(self.B_Symbol))
+        axs[1].scatter(
+            self.df[self.df['AlongEntry'] == 1].index,
+            self.df[self.df['AlongEntry'] == 1][self.B_Symbol],
+            c = "g",
+            s = 10
+            )
+        axs[1].scatter(
+            self.df[self.df['AshortEntry'] == 1].index,
+            self.df[self.df['AshortEntry'] == 1][self.B_Symbol],
+            c = "g",
+            s = 10
+            )
+        axs[1].scatter(
+            self.df[self.df['AlongExit'] == 1].index,
+            self.df[self.df['AlongExit'] == 1][self.B_Symbol],
+            c = "r",
+            s = 10
+            )
+        axs[1].scatter(
+            self.df[self.df['AshortExit'] == 1].index,
+            self.df[self.df['AshortExit'] == 1][self.B_Symbol],
+            c = "r",
+            s = 10
+            )
+        axs[2].plot(date, total, color = 'b')
+        axs[2].set_ylabel("Asset")
+        axs[2].scatter(
+            self.df[self.df['AlongEntry'] == 1].index,
+            self.df[self.df['AlongEntry'] == 1]['total'],
+            c = "g",
+            s = 10
+            )
+        axs[2].scatter(
+            self.df[self.df['AshortEntry'] == 1].index,
+            self.df[self.df['AshortEntry'] == 1]['total'],
+            c = "g",
+            s = 10
+            )
+        axs[2].scatter(
+            self.df[self.df['AlongExit'] == 1].index,
+            self.df[self.df['AlongExit'] == 1]['total'],
+            c = "r",
+            s = 10
+            )
+        axs[2].scatter(
+            self.df[self.df['AshortExit'] == 1].index,
+            self.df[self.df['AshortExit'] == 1]['total'],
+            c = "r",
+            s = 10
+            )
+        axs[3].plot(date, zscore, color = 'y')
+        axs[3].set_ylabel("Z-score")
+        axs[3].scatter(
+            self.df[self.df['AlongEntry'] == 1].index,
+            self.df[self.df['AlongEntry'] == 1]['zscore'],
+            c = "g",
+            s = 10
+            )
+        axs[3].scatter(
+            self.df[self.df['AshortEntry'] == 1].index,
+            self.df[self.df['AshortEntry'] == 1]['zscore'],
+            c = "g",
+            s = 10
+            )
+        axs[3].scatter(
+            self.df[self.df['AlongExit'] == 1].index,
+            self.df[self.df['AlongExit'] == 1]['zscore'],
+            c = "r",
+            s = 10
+            )
+        axs[3].scatter(
+            self.df[self.df['AshortExit'] == 1].index,
+            self.df[self.df['AshortExit'] == 1]['zscore'],
+            c = "r",
+            s = 10
+            )
+        axs[3].set_yticks([-self.stopLoss, -self.entry, self.exit, -self.exit, self.entry, self.stopLoss])
+        axs[3].set_ylim(-3, 3)
+        axs[0].grid()
+        axs[1].grid()
+        axs[2].grid()
+        axs[3].grid()
+        plt.show()
