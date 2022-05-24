@@ -90,23 +90,27 @@ class pairTrade():
         self.df['zscore'] = self.df['zscore'].shift(1)
         # self.df['ASymbolSide'] = [-1 if i >= self.exit else 1 if i < -self.exit else 0 for i in self.df['zscore'].tolist()]
         
-    def strategy(self, strategyType, actionType, entry, exit, stopLoss, init = 100000):
+    def strategy(self, strategyType, actionType, entry, exit, singalStopLoss, stopLossType = None, stopLossPara = None, init = 100000):
         """
         Args:
             strategyType (string): divergence convergence.
             actionType (string): amount unit.
             entry (float): zscore entry point. 
             exit (float): zscore entry point. 
-            stopLoss (float): stopLoss. 
+            singalStopLoss (float): singalStopLoss. 
             init (int, optional): initial amount. Defaults to 100000.
-            rolling (int, optional): rolling window calculations. Defaults to 20.
+            stopLossType (tuple): stopLoss type, stopLoss, trailingStop, timeStop.
+            stopLossPara (tuple): stopLoss parameter.
         """
         self.strategyType = strategyType
         self.actionType = actionType
         self.entry = entry
         self.exit = exit
-        self.stopLoss = stopLoss
+        self.singalStopLoss = singalStopLoss
+        self.stopLossType = stopLossType
+        self.stopLossPara = stopLossPara
         self.init = init
+
         actionObject = pairTradeAction(self.init, self.actionType)
         
         pastStatus = 0
@@ -122,10 +126,20 @@ class pairTrade():
             raise Exception('strategyType must be divergence or convergence')
 
         for index, row in self.df.iterrows():
-            currStatus = 0 if (pastStatus == 1 and row['zscore'] < -self.exit) or (pastStatus == -1 and row['zscore'] > self.exit) else 1 if (pastStatus == 1 and row['zscore'] > self.exit or row['zscore'] > self.entry) and row['zscore'] < self.stopLoss else 2 if row['zscore'] > self.stopLoss else -1 if (pastStatus == -1 and row['zscore'] < -self.exit or row['zscore'] < -self.entry) and row['zscore'] > -self.stopLoss else -2 if row['zscore'] < -self.stopLoss else 0
+            currStatus = 0 if (pastStatus == 1 and row['zscore'] < -self.exit) or (pastStatus == -1 and row['zscore'] > self.exit) else 1 if (pastStatus == 1 and row['zscore'] > self.exit or row['zscore'] > self.entry) and row['zscore'] < self.singalStopLoss else 2 if row['zscore'] > self.singalStopLoss else -1 if (pastStatus == -1 and row['zscore'] < -self.exit or row['zscore'] < -self.entry) and row['zscore'] > -self.singalStopLoss else -2 if row['zscore'] < -self.singalStopLoss else 0
             conStatus = (pastStatus, currStatus)
             pastStatus = currStatus
-            actionObject.runAction(conStatus, row[self.A_Symbol],  row[self.B_Symbol], row['ASymbolSide'], row['BSymbolSide'])
+            actionObject.runAction(
+                 strategyKey = conStatus,
+                 date = index,
+                 A_Price = row[self.A_Symbol],
+                 B_Price = row[self.B_Symbol],
+                 A_Side = row['ASymbolSide'],
+                 B_Side = row['BSymbolSide'], 
+                 stopLossType = self.stopLossType,
+                 stopLossPara = self.stopLossPara
+                 )
+            # print(index, conStatus)
             date.append(index)
             statusList.append(currStatus)
             
@@ -138,10 +152,8 @@ class pairTrade():
         self.df['available'] = actionObject.availableList
         self.df['total'] = self.df['totalAsset'] + self.df['available']
         self.df['PNL'] = self.df['totalAsset'] + self.df['available'] - self.init
-        self.df['AlongEntry'] = actionObject.AlongEntry
-        self.df['AshortEntry'] = actionObject.AshortEntry
-        self.df['AlongExit'] = actionObject.AlongExit
-        self.df['AshortExit'] = actionObject.AshortExit
+        self.df['AEntry'] = actionObject.AEntry
+        self.df['AExit'] = actionObject.AExit
         DD = []
         initEquity = 100000
         for i in self.df['total'].tolist():
@@ -244,159 +256,87 @@ class pairTrade():
         axs[0].plot(date, Asym, color = 'b')
         axs[0].set_ylabel("{}".format(self.A_Symbol))
         axs[0].scatter(
-            self.df[self.df['AlongEntry'] == 1].index,
-            self.df[self.df['AlongEntry'] == 1][self.A_Symbol],
+            self.df[self.df['AEntry'] == 1].index,
+            self.df[self.df['AEntry'] == 1][self.A_Symbol],
             c = "g",
             s = 10
             )
         axs[0].scatter(
-            self.df[self.df['AshortEntry'] == 1].index,
-            self.df[self.df['AshortEntry'] == 1][self.A_Symbol],
-            c = "g",
-            s = 10
-            )
-        axs[0].scatter(
-            self.df[self.df['AlongExit'] == 1].index,
-            self.df[self.df['AlongExit'] == 1][self.A_Symbol],
-            c = "r",
-            s = 10
-            )
-        axs[0].scatter(
-            self.df[self.df['AshortExit'] == 1].index,
-            self.df[self.df['AshortExit'] == 1][self.A_Symbol],
+            self.df[self.df['AExit'] == 1].index,
+            self.df[self.df['AExit'] == 1][self.A_Symbol],
             c = "r",
             s = 10
             )
         axs[1].plot(date, Bsym, color = 'b')
         axs[1].set_ylabel("{}".format(self.B_Symbol))
         axs[1].scatter(
-            self.df[self.df['AlongEntry'] == 1].index,
-            self.df[self.df['AlongEntry'] == 1][self.B_Symbol],
+            self.df[self.df['AEntry'] == 1].index,
+            self.df[self.df['AEntry'] == 1][self.B_Symbol],
             c = "g",
             s = 10
             )
         axs[1].scatter(
-            self.df[self.df['AshortEntry'] == 1].index,
-            self.df[self.df['AshortEntry'] == 1][self.B_Symbol],
-            c = "g",
-            s = 10
-            )
-        axs[1].scatter(
-            self.df[self.df['AlongExit'] == 1].index,
-            self.df[self.df['AlongExit'] == 1][self.B_Symbol],
-            c = "r",
-            s = 10
-            )
-        axs[1].scatter(
-            self.df[self.df['AshortExit'] == 1].index,
-            self.df[self.df['AshortExit'] == 1][self.B_Symbol],
+            self.df[self.df['AExit'] == 1].index,
+            self.df[self.df['AExit'] == 1][self.B_Symbol],
             c = "r",
             s = 10
             )
         axs[2].plot(date, indicate, color = 'b')
         axs[2].set_ylabel("{}".format(self.tradeType))
         axs[2].scatter(
-            self.df[self.df['AlongEntry'] == 1].index,
-            self.df[self.df['AlongEntry'] == 1][self.tradeType],
+            self.df[self.df['AEntry'] == 1].index,
+            self.df[self.df['AEntry'] == 1][self.tradeType],
             c = "g",
             s = 10
             )
         axs[2].scatter(
-            self.df[self.df['AshortEntry'] == 1].index,
-            self.df[self.df['AshortEntry'] == 1][self.tradeType],
-            c = "g",
-            s = 10
-            )
-        axs[2].scatter(
-            self.df[self.df['AlongExit'] == 1].index,
-            self.df[self.df['AlongExit'] == 1][self.tradeType],
-            c = "r",
-            s = 10
-            )
-        axs[2].scatter(
-            self.df[self.df['AshortExit'] == 1].index,
-            self.df[self.df['AshortExit'] == 1][self.tradeType],
+            self.df[self.df['AExit'] == 1].index,
+            self.df[self.df['AExit'] == 1][self.tradeType],
             c = "r",
             s = 10
             )
         axs[3].plot(date, total, color = 'b')
         axs[3].set_ylabel("equity curve")
         axs[3].scatter(
-            self.df[self.df['AlongEntry'] == 1].index,
-            self.df[self.df['AlongEntry'] == 1]['total'],
+            self.df[self.df['AEntry'] == 1].index,
+            self.df[self.df['AEntry'] == 1]['total'],
             c = "g",
             s = 10
             )
         axs[3].scatter(
-            self.df[self.df['AshortEntry'] == 1].index,
-            self.df[self.df['AshortEntry'] == 1]['total'],
-            c = "g",
-            s = 10
-            )
-        axs[3].scatter(
-            self.df[self.df['AlongExit'] == 1].index,
-            self.df[self.df['AlongExit'] == 1]['total'],
-            c = "r",
-            s = 10
-            )
-        axs[3].scatter(
-            self.df[self.df['AshortExit'] == 1].index,
-            self.df[self.df['AshortExit'] == 1]['total'],
+            self.df[self.df['AExit'] == 1].index,
+            self.df[self.df['AExit'] == 1]['total'],
             c = "r",
             s = 10
             )
         axs[4].plot(date, zscore, color = 'y')
         axs[4].set_ylabel("Z-score")
         axs[4].scatter(
-            self.df[self.df['AlongEntry'] == 1].index,
-            self.df[self.df['AlongEntry'] == 1]['zscore'],
+            self.df[self.df['AEntry'] == 1].index,
+            self.df[self.df['AEntry'] == 1]['zscore'],
             c = "g",
             s = 10
             )
         axs[4].scatter(
-            self.df[self.df['AshortEntry'] == 1].index,
-            self.df[self.df['AshortEntry'] == 1]['zscore'],
-            c = "g",
-            s = 10
-            )
-        axs[4].scatter(
-            self.df[self.df['AlongExit'] == 1].index,
-            self.df[self.df['AlongExit'] == 1]['zscore'],
+            self.df[self.df['AExit'] == 1].index,
+            self.df[self.df['AExit'] == 1]['zscore'],
             c = "r",
             s = 10
             )
-        axs[4].scatter(
-            self.df[self.df['AshortExit'] == 1].index,
-            self.df[self.df['AshortExit'] == 1]['zscore'],
-            c = "r",
-            s = 10
-            )
-        axs[4].set_yticks([-self.stopLoss, -self.entry, self.exit, -self.exit, self.entry, self.stopLoss])
+        axs[4].set_yticks([-self.singalStopLoss, -self.entry, self.exit, -self.exit, self.entry, self.singalStopLoss])
         axs[4].set_ylim(-3, 3)
 
         axs[5].plot(date, drawdown, color = 'y')
         axs[5].set_ylabel("{}".format('drawdown'))
         axs[5].scatter(
-            self.df[self.df['AlongEntry'] == 1].index,
-            self.df[self.df['AlongEntry'] == 1]['DD'],
+            self.df[self.df['AEntry'] == 1].index,
+            self.df[self.df['AEntry'] == 1]['DD'],
             c = "g",
             s = 10
             )
         axs[5].scatter(
-            self.df[self.df['AshortEntry'] == 1].index,
-            self.df[self.df['AshortEntry'] == 1]['DD'],
-            c = "g",
-            s = 10
-            )
-        axs[5].scatter(
-            self.df[self.df['AlongExit'] == 1].index,
-            self.df[self.df['AlongExit'] == 1]['DD'],
-            c = "r",
-            s = 10
-            )
-        axs[5].scatter(
-            self.df[self.df['AshortExit'] == 1].index,
-            self.df[self.df['AshortExit'] == 1]['DD'],
+            self.df[self.df['AExit'] == 1].index,
+            self.df[self.df['AExit'] == 1]['DD'],
             c = "r",
             s = 10
             )
