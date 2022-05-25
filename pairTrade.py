@@ -331,7 +331,7 @@ class pairTrade():
         # axs[4].set_yticks([-self.signalStopLoss, -self.entry, self.exit, -self.exit, self.entry, self.signalStopLoss])
         # axs[4].set_ylim(-3, 3)
         axs[5].plot(date, A_position, color = 'y')
-        axs[5].set_ylabel("{} position".format(self.A_Symbol))
+        axs[5].set_ylabel("{}_position".format(self.A_Symbol))
         axs[5].scatter(
             self.df[self.df['AEntry'] == 1].index,
             self.df[self.df['AEntry'] == 1]['A_position'],
@@ -346,7 +346,7 @@ class pairTrade():
             )
 
         axs[6].plot(date, B_position, color = 'y')
-        axs[6].set_ylabel("{} position".format(self.B_Symbol))
+        axs[6].set_ylabel("{}_position".format(self.B_Symbol))
         axs[6].scatter(
             self.df[self.df['AEntry'] == 1].index,
             self.df[self.df['AEntry'] == 1]['B_position'],

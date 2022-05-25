@@ -63,7 +63,7 @@ class pairTradeAction():
                         (-2,-1) : self._stoplossForwardEntry, } 
 
         self.stopLossDict = {
-                             '_fixedStoploss': self._fixedStoploss, 
+                             'fixedStoploss': self._fixedStoploss, 
                              'trailingStop': self._trailingStop,
                              'timeStop': self._timeStop
                              }  
