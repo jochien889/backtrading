@@ -63,7 +63,7 @@ class pairTradeAction():
                         (-2,-1) : self._stoplossForwardEntry, } 
 
         self.stopLossDict = {
-                             'stopLoss': self._stoploss, 
+                             '_fixedStoploss': self._fixedStoploss, 
                              'trailingStop': self._trailingStop,
                              'timeStop': self._timeStop
                              }  
@@ -73,7 +73,7 @@ class pairTradeAction():
         else:
             self._record()
 
-    def _stoploss(self):
+    def _fixedStoploss(self):
         AEquity = abs(self.A_positionList[-1]) * (self.A_Price - self.A_EntryPrice + self.A_EntryPrice) if self.A_positionList[-1] > 0 else abs(self.A_positionList[-1]) * (self.A_EntryPrice - self.A_Price + self.A_EntryPrice) if self.A_positionList[-1] < 0 else 0
         BEquity = abs(self.B_positionList[-1]) * (self.B_Price - self.B_EntryPrice + self.B_EntryPrice) if self.B_positionList[-1] > 0 else abs(self.B_positionList[-1]) * (self.B_EntryPrice - self.B_Price + self.B_EntryPrice) if self.B_positionList[-1] < 0 else 0
         currEquity = AEquity + BEquity

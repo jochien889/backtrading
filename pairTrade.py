@@ -90,7 +90,7 @@ class pairTrade():
         self.df['zscore'] = self.df['zscore'].shift(1)
         # self.df['ASymbolSide'] = [-1 if i >= self.exit else 1 if i < -self.exit else 0 for i in self.df['zscore'].tolist()]
         
-    def strategy(self, strategyType, actionType, entry, exit, singalStopLoss, stopLossType = None, stopLossPara = None, init = 100000):
+    def strategy(self, strategyType, actionType, entry, exit, signalStopLoss = None, stopLossType = None, stopLossPara = None, init = 100000):
         """
         Args:
             strategyType (string): divergence convergence.
@@ -106,7 +106,7 @@ class pairTrade():
         self.actionType = actionType
         self.entry = entry
         self.exit = exit
-        self.singalStopLoss = singalStopLoss
+        self.signalStopLoss = signalStopLoss
         self.stopLossType = stopLossType
         self.stopLossPara = stopLossPara
         self.init = init
@@ -126,7 +126,10 @@ class pairTrade():
             raise Exception('strategyType must be divergence or convergence')
 
         for index, row in self.df.iterrows():
-            currStatus = 0 if (pastStatus == 1 and row['zscore'] < -self.exit) or (pastStatus == -1 and row['zscore'] > self.exit) else 1 if (pastStatus == 1 and row['zscore'] > self.exit or row['zscore'] > self.entry) and row['zscore'] < self.singalStopLoss else 2 if row['zscore'] > self.singalStopLoss else -1 if (pastStatus == -1 and row['zscore'] < -self.exit or row['zscore'] < -self.entry) and row['zscore'] > -self.singalStopLoss else -2 if row['zscore'] < -self.singalStopLoss else 0
+            if self.signalStopLoss:
+                currStatus = 0 if (pastStatus == 1 and row['zscore'] < -self.exit) or (pastStatus == -1 and row['zscore'] > self.exit) else 1 if (pastStatus == 1 and row['zscore'] > self.exit or row['zscore'] > self.entry) and row['zscore'] < self.signalStopLoss else 2 if row['zscore'] > self.signalStopLoss else -1 if (pastStatus == -1 and row['zscore'] < -self.exit or row['zscore'] < -self.entry) and row['zscore'] > -self.signalStopLoss else -2 if row['zscore'] < -self.signalStopLoss else 0
+            else:
+                currStatus = 0 if (pastStatus == 1 and row['zscore'] < -self.exit) or (pastStatus == -1 and row['zscore'] > self.exit) else 1 if (pastStatus == 1 and row['zscore'] > self.exit or row['zscore'] > self.entry) else -1 if (pastStatus == -1 and row['zscore'] < -self.exit or row['zscore'] < -self.entry) else 0
             conStatus = (pastStatus, currStatus)
             pastStatus = currStatus
             actionObject.runAction(
@@ -248,9 +251,11 @@ class pairTrade():
         indicate = self.df[self.tradeType]
         total = self.df['total']
         zscore = self.df['zscore']
+        A_position = self.df['A_position']
+        B_position = self.df['B_position']
         drawdown = self.df['DD']
 
-        fig, axs = plt.subplots(6, 1, sharex=True, figsize = (15, 10))
+        fig, axs = plt.subplots(8, 1, sharex=True, figsize = (15, 10))
         fig.subplots_adjust(hspace=0)
 
         axs[0].plot(date, Asym, color = 'b')
@@ -323,18 +328,48 @@ class pairTrade():
             c = "r",
             s = 10
             )
-        axs[4].set_yticks([-self.singalStopLoss, -self.entry, self.exit, -self.exit, self.entry, self.singalStopLoss])
-        axs[4].set_ylim(-3, 3)
-
-        axs[5].plot(date, drawdown, color = 'y')
-        axs[5].set_ylabel("{}".format('drawdown'))
+        # axs[4].set_yticks([-self.signalStopLoss, -self.entry, self.exit, -self.exit, self.entry, self.signalStopLoss])
+        # axs[4].set_ylim(-3, 3)
+        axs[5].plot(date, A_position, color = 'y')
+        axs[5].set_ylabel("{} position".format(self.A_Symbol))
         axs[5].scatter(
+            self.df[self.df['AEntry'] == 1].index,
+            self.df[self.df['AEntry'] == 1]['A_position'],
+            c = "g",
+            s = 10
+            )
+        axs[5].scatter(
+            self.df[self.df['AExit'] == 1].index,
+            self.df[self.df['AExit'] == 1]['A_position'],
+            c = "r",
+            s = 10
+            )
+
+        axs[6].plot(date, B_position, color = 'y')
+        axs[6].set_ylabel("{} position".format(self.B_Symbol))
+        axs[6].scatter(
+            self.df[self.df['AEntry'] == 1].index,
+            self.df[self.df['AEntry'] == 1]['B_position'],
+            c = "g",
+            s = 10
+            )
+        axs[6].scatter(
+            self.df[self.df['AExit'] == 1].index,
+            self.df[self.df['AExit'] == 1]['B_position'],
+            c = "r",
+            s = 10
+            )
+
+
+        axs[7].plot(date, drawdown, color = 'y')
+        axs[7].set_ylabel("{}".format('drawdown'))
+        axs[7].scatter(
             self.df[self.df['AEntry'] == 1].index,
             self.df[self.df['AEntry'] == 1]['DD'],
             c = "g",
             s = 10
             )
-        axs[5].scatter(
+        axs[7].scatter(
             self.df[self.df['AExit'] == 1].index,
             self.df[self.df['AExit'] == 1]['DD'],
             c = "r",
@@ -347,4 +382,6 @@ class pairTrade():
         axs[3].grid()
         axs[4].grid()
         axs[5].grid()
+        axs[6].grid()
+        axs[7].grid()
         plt.show()
