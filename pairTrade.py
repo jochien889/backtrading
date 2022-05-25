@@ -23,10 +23,10 @@ class pairTrade():
         self.A_Symbol = df.columns[0]
         self.B_Symbol = df.columns[1]
         self.tradeTypeDict = {
-            'spread': self._indicatorSpread, 
-            'ratio': self._indicatorRatio, 
+            'priceSpread': self._indicatorSpread, 
+            'priceRatio': self._indicatorRatio, 
             'returnSpread': self._indicatorReturnSpread,
-            'regression': self._indicatorRegression
+            'priceRegression': self._indicatorRegression
         }
         self.KPI = pd.DataFrame()
     
@@ -51,8 +51,8 @@ class pairTrade():
         """
         等金額下注
         """
-        self.df['spread'] = self.df.loc[:,self.A_Symbol] - self.df.loc[:,self.B_Symbol]
-        self.df['zscore'] = rolling_apply(self._zScore, self.rolling, self.df['spread'])
+        self.df['priceSpread'] = self.df.loc[:,self.A_Symbol] - self.df.loc[:,self.B_Symbol]
+        self.df['zscore'] = rolling_apply(self._zScore, self.rolling, self.df['priceSpread'])
         self.df['zscore'] = self.df['zscore'].shift(1)
         # self.df['ASymbolSide'] = [-1 if i >= self.exit else 1 if i < -self.exit else 0 for i in self.df['zscore'].tolist()]
         
@@ -60,8 +60,8 @@ class pairTrade():
         """
         等金額下注
         """
-        self.df['ratio'] = self.df.loc[:,self.A_Symbol]/self.df.loc[:,self.B_Symbol]
-        self.df['zscore'] = rolling_apply(self._zScore, self.rolling,self.df.loc[:,'ratio'])
+        self.df['priceRatio'] = self.df.loc[:,self.A_Symbol]/self.df.loc[:,self.B_Symbol]
+        self.df['zscore'] = rolling_apply(self._zScore, self.rolling,self.df.loc[:,'priceRatio'])
         self.df['zscore'] = self.df['zscore'].shift(1)
         # self.df['ASymbolSide'] = [-1 if i >= self.exit else 1 if i < -self.exit else 0 for i in self.df['zscore'].tolist()]
 
@@ -85,8 +85,8 @@ class pairTrade():
             regress_results=sm.ols(formula="{} ~ {}".format(self.A_Symbol, self.B_Symbol), data=self.df[(t-self.rolling):t]).fit() # Note this can deal with NaN in top row
             hedgeRatio[t-1]=regress_results.params[1] ## beta1
         self.df['hedgeRatio'] = hedgeRatio 
-        self.df['regression'] = self.df.loc[:,self.A_Symbol] - self.df.loc[:,'hedgeRatio'] * self.df.loc[:,self.B_Symbol]
-        self.df['zscore'] = rolling_apply(self._zScore, self.rolling, self.df.loc[:,'regression'])
+        self.df['priceRegression'] = self.df.loc[:,self.A_Symbol] - self.df.loc[:,'hedgeRatio'] * self.df.loc[:,self.B_Symbol]
+        self.df['zscore'] = rolling_apply(self._zScore, self.rolling, self.df.loc[:,'priceRegression'])
         self.df['zscore'] = self.df['zscore'].shift(1)
         # self.df['ASymbolSide'] = [-1 if i >= self.exit else 1 if i < -self.exit else 0 for i in self.df['zscore'].tolist()]
         
