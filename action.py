@@ -78,23 +78,16 @@ class pairTradeAction():
         BEquity = abs(self.B_positionList[-1]) * (self.B_Price - self.B_EntryPrice + self.B_EntryPrice) if self.B_positionList[-1] > 0 else abs(self.B_positionList[-1]) * (self.B_EntryPrice - self.B_Price + self.B_EntryPrice) if self.B_positionList[-1] < 0 else 0
         currEquity = AEquity + BEquity
         pastEquity = self.entryPortfolio
-        if abs((currEquity - pastEquity)/pastEquity) > self.stopLossPara and self.stopLossFlag == False:
-            self.AEntry.append(0)
-            self.AExit.append(1)
-            self.A_PriceList.append(self.A_Price)
-            self.B_PriceList.append(self.B_Price)
-            ## 可用資金
-            A_available = abs(self.A_positionList[-1]) * (self.A_Price - self.A_EntryPrice + self.A_EntryPrice) if self.A_positionList[-1] > 0 else abs(self.A_positionList[-1]) * (self.A_EntryPrice - self.A_Price + self.A_EntryPrice) if self.A_positionList[-1] < 0 else 0
-            B_available = abs(self.B_positionList[-1]) * (self.B_Price - self.B_EntryPrice + self.B_EntryPrice) if self.B_positionList[-1] > 0 else abs(self.B_positionList[-1]) * (self.B_EntryPrice - self.B_Price + self.B_EntryPrice) if self.B_positionList[-1] < 0 else 0
-            self.availableList.append(A_available + B_available)
-            ## 部位資產
-            self.A_assetList.append(0)
-            self.B_assetList.append(0)
-            self.totalAssetList.append(0)
-            self.A_positionList.append(0)
-            self.B_positionList.append(0)
-            self.stopLossFlag = True
-            print('[Stop-loss point]', self.date)
+        if self.fixedProfitTaking:
+            if self.stopLossFlag == False and (currEquity - pastEquity)/pastEquity >  self.fixedProfitTaking:
+                self._stoplossExit()
+            else:
+                self._record()
+        elif self.fixedStoploss: 
+            if self.stopLossFlag == False and (currEquity - pastEquity)/pastEquity < -self.fixedStoploss:
+                self._stoplossExit()
+            else:
+                self._record()
         else:
             self._record()
 
@@ -104,45 +97,22 @@ class pairTradeAction():
         currEquity = AEquity + BEquity
         pastEquity = self.entryPortfolio
         self.highTrailingEquity = max(currEquity, pastEquity, self.highTrailingEquity)
-        # print(self.date, currEquity, pastEquity, self.highTrailingEquity)
-        if currEquity < self.highTrailingEquity * (1-self.stopLossPara) and self.stopLossFlag == False:
-            self.AEntry.append(0)
-            self.AExit.append(1)
-            self.A_PriceList.append(self.A_Price)
-            self.B_PriceList.append(self.B_Price)
-            ## 可用資金
-            A_available = abs(self.A_positionList[-1]) * (self.A_Price - self.A_EntryPrice + self.A_EntryPrice) if self.A_positionList[-1] > 0 else abs(self.A_positionList[-1]) * (self.A_EntryPrice - self.A_Price + self.A_EntryPrice) if self.A_positionList[-1] < 0 else 0
-            B_available = abs(self.B_positionList[-1]) * (self.B_Price - self.B_EntryPrice + self.B_EntryPrice) if self.B_positionList[-1] > 0 else abs(self.B_positionList[-1]) * (self.B_EntryPrice - self.B_Price + self.B_EntryPrice) if self.B_positionList[-1] < 0 else 0
-            self.availableList.append(A_available + B_available)
-            ## 部位資產
-            self.A_assetList.append(0)
-            self.B_assetList.append(0)
-            self.totalAssetList.append(0)
-            self.A_positionList.append(0)
-            self.B_positionList.append(0)
-            self.stopLossFlag = True
-            print('[Stop-loss point]', self.date, self.highTrailingEquity)
+        if self.trailingStoploss: 
+            if self.stopLossFlag == False and currEquity < self.highTrailingEquity * (1-self.trailingStoploss):
+                self._stoplossExit()
+            else:
+                self._record()
+        elif self.trailingProfitTaking:
+            if self.stopLossFlag == False and currEquity > self.highTrailingEquity * (1+self.trailingProfitTaking):
+                self._stoplossExit()
+            else:
+                self._record()
         else:
             self._record()        
 
     def _timeStop(self):
-        if (self.date - self.entryDate).days >= self.stopLossPara and self.stopLossFlag == False:
-            self.AEntry.append(0)
-            self.AExit.append(1)
-            self.A_PriceList.append(self.A_Price)
-            self.B_PriceList.append(self.B_Price)
-            ## 可用資金
-            A_available = abs(self.A_positionList[-1]) * (self.A_Price - self.A_EntryPrice + self.A_EntryPrice) if self.A_positionList[-1] > 0 else abs(self.A_positionList[-1]) * (self.A_EntryPrice - self.A_Price + self.A_EntryPrice) if self.A_positionList[-1] < 0 else 0
-            B_available = abs(self.B_positionList[-1]) * (self.B_Price - self.B_EntryPrice + self.B_EntryPrice) if self.B_positionList[-1] > 0 else abs(self.B_positionList[-1]) * (self.B_EntryPrice - self.B_Price + self.B_EntryPrice) if self.B_positionList[-1] < 0 else 0
-            self.availableList.append(A_available + B_available)
-            ## 部位資產
-            self.A_assetList.append(0)
-            self.B_assetList.append(0)
-            self.totalAssetList.append(0)
-            self.A_positionList.append(0)
-            self.B_positionList.append(0)
-            self.stopLossFlag = True
-            print('[Stop-loss point]', self.date)
+        if (self.date - self.entryDate).days >= self.timeStop and self.stopLossFlag == False:
+            self._stoplossExit()
         else:
             self._record()
     
@@ -160,8 +130,26 @@ class pairTradeAction():
             self.availableList.append(self.availableList[-1] if (self.A_assetList[-1] + self.B_assetList[-1]) == 0 else 0)
         else:
             self.availableList.append(self.init) 
+
+    def _stoplossExit(self):   
+        self.AEntry.append(0)
+        self.AExit.append(1)
+        self.A_PriceList.append(self.A_Price)
+        self.B_PriceList.append(self.B_Price)
+        ## 可用資金
+        A_available = abs(self.A_positionList[-1]) * (self.A_Price - self.A_EntryPrice + self.A_EntryPrice) if self.A_positionList[-1] > 0 else abs(self.A_positionList[-1]) * (self.A_EntryPrice - self.A_Price + self.A_EntryPrice) if self.A_positionList[-1] < 0 else 0
+        B_available = abs(self.B_positionList[-1]) * (self.B_Price - self.B_EntryPrice + self.B_EntryPrice) if self.B_positionList[-1] > 0 else abs(self.B_positionList[-1]) * (self.B_EntryPrice - self.B_Price + self.B_EntryPrice) if self.B_positionList[-1] < 0 else 0
+        self.availableList.append(A_available + B_available)
+        ## 部位資產
+        self.A_assetList.append(0)
+        self.B_assetList.append(0)
+        self.totalAssetList.append(0)
+        self.A_positionList.append(0)
+        self.B_positionList.append(0)
+        self.stopLossFlag = True
+        print('[Stop-loss point]', self.date) 
         
-    def runAction(self, strategyKey, date, A_Price, B_Price, A_Side, B_Side, stopLossType = None, stopLossPara = None, stopLossPoint = 'equity'):
+    def runAction(self, strategyKey, date, A_Price, B_Price, A_Side, B_Side, stopLossType , fixedProfitTaking, fixedStoploss, trailingProfitTaking, trailingStoploss, timeStop):
         """
         Args:
             strategyKey (tuple): pair status code.
@@ -170,8 +158,11 @@ class pairTradeAction():
             A_Side (float): side of symbol A.
             B_Side (float): side of symbol B.
             stopLossType (tuple): stopLoss type, stopLoss, trailingStop, timeStop.
-            stopLossPara (tuple): stopLoss parameter.
-            stopLossStandard(str): equity, price
+            fixedProfitTaking (float): fixed Profit Taking point.
+            fixedStoploss (float): fixed Stoploss point.
+            trailingProfitTaking (float): trailing Profit Taking point.
+            trailingStoploss (float): trailing Stoploss point.
+            timeStop (int): time stop
         """
         self.strategyKey = strategyKey
         self.date = date
@@ -180,14 +171,21 @@ class pairTradeAction():
         self.A_Side = A_Side
         self.B_Side = B_Side
         self.stopLossType = stopLossType
-        self.stopLossPara = stopLossPara
+        self.fixedProfitTaking = fixedProfitTaking
+        self.fixedStoploss = fixedStoploss
+        self.trailingProfitTaking = trailingProfitTaking
+        self.trailingStoploss = trailingStoploss
+        self.timeStop = timeStop
 
         if strategyKey not in self.strategy and (abs(strategyKey[0]) == 1 and abs(strategyKey[1]) == 1):
             self.stopLossHub()
+
         elif strategyKey not in self.strategy and (abs(strategyKey[0]) != 1 or abs(strategyKey[1]) != 1):
             self._record()
+
         else:
             self.strategy[strategyKey]()
+
         
     def _stoplossBackwardEntry2(self):
         """

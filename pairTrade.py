@@ -90,7 +90,7 @@ class pairTrade():
         self.df['zscore'] = self.df['zscore'].shift(1)
         # self.df['ASymbolSide'] = [-1 if i >= self.exit else 1 if i < -self.exit else 0 for i in self.df['zscore'].tolist()]
         
-    def strategy(self, strategyType, actionType, entry, exit, signalStopLoss = None, stopLossType = None, stopLossPara = None, init = 100000):
+    def strategy(self, strategyType, actionType, entry, exit, signalStopLoss = None, stopLossType = None, init = 100000, fixedProfitTaking = None, fixedStoploss = None, trailingProfitTaking = None, trailingStoploss = None, timeStop = None):
         """
         Args:
             strategyType (string): divergence convergence.
@@ -108,7 +108,11 @@ class pairTrade():
         self.exit = exit
         self.signalStopLoss = signalStopLoss
         self.stopLossType = stopLossType
-        self.stopLossPara = stopLossPara
+        self.fixedProfitTaking = fixedProfitTaking
+        self.fixedStoploss = fixedStoploss
+        self.trailingProfitTaking = trailingProfitTaking
+        self.trailingStoploss = trailingStoploss
+        self.timeStop = timeStop
         self.init = init
 
         actionObject = pairTradeAction(self.init, self.actionType)
@@ -130,6 +134,7 @@ class pairTrade():
                 currStatus = 0 if (pastStatus == 1 and row['zscore'] < -self.exit) or (pastStatus == -1 and row['zscore'] > self.exit) else 1 if (pastStatus == 1 and row['zscore'] > self.exit or row['zscore'] > self.entry) and row['zscore'] < self.signalStopLoss else 2 if row['zscore'] > self.signalStopLoss else -1 if (pastStatus == -1 and row['zscore'] < -self.exit or row['zscore'] < -self.entry) and row['zscore'] > -self.signalStopLoss else -2 if row['zscore'] < -self.signalStopLoss else 0
             else:
                 currStatus = 0 if (pastStatus == 1 and row['zscore'] < -self.exit) or (pastStatus == -1 and row['zscore'] > self.exit) else 1 if (pastStatus == 1 and row['zscore'] > self.exit or row['zscore'] > self.entry) else -1 if (pastStatus == -1 and row['zscore'] < -self.exit or row['zscore'] < -self.entry) else 0
+            
             conStatus = (pastStatus, currStatus)
             pastStatus = currStatus
             actionObject.runAction(
@@ -140,12 +145,17 @@ class pairTrade():
                  A_Side = row['ASymbolSide'],
                  B_Side = row['BSymbolSide'], 
                  stopLossType = self.stopLossType,
-                 stopLossPara = self.stopLossPara
+                 fixedProfitTaking = self.fixedProfitTaking, 
+                 fixedStoploss = self.fixedStoploss, 
+                 trailingProfitTaking = self.trailingProfitTaking, 
+                 trailingStoploss = self.trailingStoploss, 
+                 timeStop = self.timeStop
+
                  )
             # print(index, conStatus)
             date.append(index)
             statusList.append(currStatus)
-            
+
         self.df['status'] = statusList
         self.df['A_position'] = actionObject.A_positionList
         self.df['B_position'] = actionObject.B_positionList
