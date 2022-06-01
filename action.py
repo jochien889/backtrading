@@ -147,7 +147,7 @@ class pairTradeAction():
         self.A_positionList.append(0)
         self.B_positionList.append(0)
         self.stopLossFlag = True
-        print('[Stop-loss point]', self.date) 
+        # print('[Stop-loss point]', self.date) 
         
     def runAction(self, strategyKey, date, A_Price, B_Price, A_Side, B_Side, stopLossType , fixedProfitTaking, fixedStoploss, trailingProfitTaking, trailingStoploss, timeStop):
         """
