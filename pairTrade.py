@@ -252,6 +252,7 @@ class pairTrade():
         print('賺賠比: ', Win_Loss_Rate)
         print('最大資金回落: ', MDD)
         print('夏普比率: ', np.mean(self.KPI['PNL'])/np.std(self.KPI['PNL']))
+        print('年化報酬率: ', (1 + ((self.KPI['totalExitAsset'][self.KPI.shape[0]-1] - self.init)/self.init)) ** self.df.shape[0])
 
     def pplot(self):
         date = self.df.index
